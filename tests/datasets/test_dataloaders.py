@@ -1,10 +1,10 @@
 import pandas as pd
 
-from forecasting_library.datasets import load_caiso
+from forecasting_library.datasets import load_caiso_data
 
 
 def test_caiso_dataset():
-    caiso_df = load_caiso()
+    caiso_df = load_caiso_data()
 
     assert isinstance(caiso_df.index, pd.DatetimeIndex)
     assert set(caiso_df.columns) == {
