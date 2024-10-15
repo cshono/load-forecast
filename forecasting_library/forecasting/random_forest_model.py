@@ -1,7 +1,6 @@
 from .base_model import BaseModel
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-import numpy as np
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, root_mean_squared_error
 
 class RandomForestModel(BaseModel):
     def __init__(self, n_estimators=100, random_state=42):
@@ -19,5 +18,6 @@ class RandomForestModel(BaseModel):
         """Evaluate the Random Forest model performance."""
         y_pred = self.forecast(X_test)
         mae = mean_absolute_error(y_test, y_pred)
-        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-        return {'MAE': mae, 'RMSE': rmse}
+        mape = mean_absolute_percentage_error(y_test, y_pred)
+        rmse = root_mean_squared_error(y_test, y_pred)
+        return {'MAE': mae, 'MAPE': mape, 'RMSE': rmse}
