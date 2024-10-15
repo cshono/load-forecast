@@ -1,9 +1,10 @@
 from .linear_model import LinearModel
 from .random_forest_model import RandomForestModel
+from .gridsearch_model import GridSearchModel
 from .backtesting import backtest
 
 class ForecastingAPI:
-    def __init__(self, model_type='linear'):
+    def __init__(self, model_type='linear', *args, **kwargs):
         """
         Initialize the forecasting API with a specified model type.
         
@@ -14,8 +15,12 @@ class ForecastingAPI:
             self.model = LinearModel()
         elif model_type == 'random_forest':
             self.model = RandomForestModel()
+        elif model_type == 'grid_search':
+            categorical_features = kwargs['categorical_features']
+            numeric_features = kwargs['numeric_features']
+            self.model = GridSearchModel(categorical_features, numeric_features, n_splits=5)
         else:
-            raise ValueError("Unsupported model type. Choose 'linear' or 'random_forest'.")
+            raise ValueError("Unsupported model type. Choose 'linear', 'random_forest', or 'grid_search.")
     
     def train_model(self, X_train, y_train):
         """Train the model using the provided training data."""
