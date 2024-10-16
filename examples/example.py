@@ -1,48 +1,77 @@
+# Example usage in the notebook
+from forecasting_library.datasets import load_caiso_data 
+from forecasting_library.forecasting.preprocessing import create_preprocessing_pipeline
 from forecasting_library.forecasting.forecasting_api import ForecastingAPI
-from forecasting_library.forecasting.preprocessing import preprocess_data, create_preprocessing_pipeline
-from forecasting_library.datasets import load_caiso_data
+from forecasting_library.forecasting.evaluation import backtest_model
 
-# Step 1: Load data
 data = load_caiso_data()
+X = data.drop(columns=['CAISO_system_load'])
+y = data['CAISO_system_load'] 
 
-# Step 2: Split Data into Training and Test Sets
-# For demonstration, use a simple train-test split; backtesting will be shown later
-train_data = data.iloc[:-24]
-test_data = data.iloc[-24:]
+# Step 1: Create the Preprocessing Pipeline
+categorical_cols = ["hour"] 
+numeric_cols = [c for c in X if c not in categorical_cols] 
+preprocessing_pipeline = create_preprocessing_pipeline(numeric_cols, categorical_cols, datetime_column='index')
 
-# Step 3: Separate Features and Target
-X_train, y_train = preprocess_data(train_data, target_column='CAISO_system_load')
-X_test, y_test = preprocess_data(train_data, target_column='CAISO_system_load')
+# Step 1: Choose a More Sophisticated Model
+model_type = 'xgboost'
 
-# Step 4: Create the Preprocessing Pipeline12
-preprocessing_pipeline = create_preprocessing_pipeline()
+# Step 2: Define the Hyperparameter Grid for the Model
+param_grid = {
+    'n_estimators': [50, 100],
+    'max_depth': [3, 6],
+    'learning_rate': [0.01, 0.1],
+    'subsample': [0.8, 1.0]
+}
 
-# Step 6: Preprocess the Data
-# Fit the preprocessing pipeline on the training data and transform both training and test sets
-X_train_preprocessed = preprocessing_pipeline.fit_transform(X_train)
-X_test_preprocessed = preprocessing_pipeline.transform(X_test)
+# Step 3: Initialize the ForecastingAPI with the Preprocessing Pipeline
+forecasting_api = ForecastingAPI(model_type=model_type, preprocessing_pipeline=preprocessing_pipeline)
 
-# Initialize the forecasting API with a linear model
-# forecasting_api = ForecastingAPI(model_type='linear')
-#forecasting_api = ForecastingAPI(model_type='random_forest')
-categorical_features = ["hour"]
-forecasting_api = ForecastingAPI(
-    model_type = 'grid_search',
-    categorical_features = categorical_features,
-    numeric_features = [c for c in X_train if c not in categorical_features]
-)
+# Step 4: Split training and test data. Split off the final month (jul 2023) for test 
+X_train, X_test, y_train, y_test = forecasting_api.split_train_test(data, target_col="CAISO_system_load", split_date="2022-08-01")
 
-# Train the model
-forecasting_api.train_model(X_train, y_train)
+# Step 4: Train the Model Using the Complete Training Pipeline (from pre jul 2023 data)
+mae = forecasting_api.train_pipeline(X_train, y_train, param_grid=param_grid, test_size=0.2)
 
-# Forecast on X_test
+# Step 5: Make Predictions on New Data 
 predictions = forecasting_api.forecast(X_test)
 
-# Evaluate the model on X_test, y_test
-evaluation_metrics = forecasting_api.evaluate_model(X_test, y_test)
-print(evaluation_metrics)
+# Step 6: Run Backtesting
+import numpy as np  
+backtest_results = backtest_model(forecasting_api.model, X, y, n_splits=14, test_size=24)
+average_mape = np.mean([r['MAPE'] for r in backtest_results])
+print(f'Average Mean Absolute Percent Error (MAPE) during backtesting: {average_mape}')
 
-# Perform backtesting
-X, y = preprocess_data(data, 'CAISO_system_load')
-backtest_results = forecasting_api.perform_backtesting(X, y, preprocessing_pipeline)
-print(backtest_results)
+
+'''
+
+
+# Step 2: Define the Model and Parameter Grid
+model_type = 'random_forest'
+param_grid = {
+    'n_estimators': [50, 100],
+    'max_depth': [5, 10],
+    'min_samples_split': [2, 5]
+}
+
+# Step 3: Initialize the ForecastingAPI with the Preprocessing Pipeline
+forecasting_api = ForecastingAPI(model_type=model_type, preprocessing_pipeline=preprocessing_pipeline)
+
+# Step 4: Split training and test data. Split off the final month (jul 2023) for test 
+X_train, X_test, y_train, y_test = forecasting_api.split_train_test(data, target_col="CAISO_system_load", split_date="2022-08-01")
+
+# Step 4: Train the Model Using the Complete Training Pipeline (from pre jul 2023 data)
+mae = forecasting_api.train_pipeline(X_train, y_train, param_grid=param_grid, test_size=0.2)
+
+# Step 5: Make Predictions on New Data 
+predictions = forecasting_api.forecast(X_test)
+
+# Step 6: Run Backtesting
+import numpy as np  
+backtest_results = backtest_model(forecasting_api.model, X, y, n_splits=14, test_size=24)
+average_mape = np.mean([r['MAPE'] for r in backtest_results])
+print(f'Average Mean Absolute Percent Error (MAPE) during backtesting: {average_mape}')
+'''
+
+
+
