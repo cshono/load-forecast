@@ -1,11 +1,20 @@
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+
 import pandas as pd
 import xgboost as xgb
+from sklearn.base import BaseEstimator
+from sklearn.pipeline import Pipeline
 
 from forecasting_library.forecasting.evaluation import backtest_model
 
 
 class ForecastingAPI:
-    def __init__(self, model_type="linear", preprocessing_pipeline=None, **model_params):
+    def __init__(
+        self,
+        model_type: str = "linear",
+        preprocessing_pipeline: Optional[Pipeline] = None,
+        **model_params: Any,
+    ) -> None:
         """
         Initialize the forecasting API.
 
@@ -19,7 +28,7 @@ class ForecastingAPI:
         self.preprocessing_pipeline = preprocessing_pipeline
         self.grid_search_result = None
 
-    def _initialize_model(self, model_type, **model_params):
+    def _initialize_model(self, model_type: str, **model_params: Any) -> BaseEstimator:
         """
         Initialize the model based on the specified type.
         """
@@ -39,7 +48,9 @@ class ForecastingAPI:
             return xgb.XGBRegressor(**model_params)
         raise ValueError(f"Unsupported model type: {model_type}")
 
-    def split_train_test(self, data: pd.DataFrame, target_col: str, split_date):
+    def split_train_test(
+        self, data: pd.DataFrame, target_col: str, split_date: Any
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
         """_summary_
 
         Args:
@@ -58,8 +69,14 @@ class ForecastingAPI:
         return X_train, X_test, y_train, y_test
 
     def train_pipeline(
-        self, X, y, param_grid=None, n_splits=5, test_size=0.2, scoring="neg_mean_absolute_error"
-    ):
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        param_grid: Optional[dict] = None,
+        n_splits: int = 5,
+        test_size: float = 0.2,
+        scoring: str = "neg_mean_absolute_error",
+    ) -> None:
         """
         Train the forecasting model using the complete training pipeline.
 
@@ -91,8 +108,13 @@ class ForecastingAPI:
             self.model.fit(X_train, y_train)
 
     def train_with_grid_search(
-        self, X, y, param_grid, n_splits=5, scoring="neg_mean_absolute_error"
-    ):
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        param_grid: dict,
+        n_splits: int = 5,
+        scoring: str = "neg_mean_absolute_error",
+    ) -> None:
         """
         Perform grid search with time series cross-validation for hyperparameter tuning.
         """
@@ -107,7 +129,7 @@ class ForecastingAPI:
         self.model = grid_search.best_estimator_
         print(f"Best hyperparameters: {grid_search.best_params_}")
 
-    def forecast(self, X):
+    def forecast(self, X: pd.DataFrame) -> Sequence:
         """
         Generate forecasts for the given data.
         """
@@ -115,5 +137,7 @@ class ForecastingAPI:
             X = self.preprocessing_pipeline.transform(X)
         return self.model.predict(X)
 
-    def backtest_model(self, X, y, n_splits, test_size):
+    def backtest_model(
+        self, X: pd.DataFrame, y: pd.Series, n_splits: int, test_size: int
+    ) -> List[Dict[str, float]]:
         return backtest_model(self.model, X, y, n_splits, test_size)

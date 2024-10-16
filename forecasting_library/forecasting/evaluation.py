@@ -1,3 +1,7 @@
+from typing import Dict, List, Sequence
+
+import pandas as pd
+from sklearn.base import BaseEstimator
 from sklearn.metrics import (
     mean_absolute_error,
     mean_absolute_percentage_error,
@@ -6,7 +10,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import TimeSeriesSplit
 
 
-def evaluate(y_test, y_pred):
+def evaluate(y_test: Sequence, y_pred: Sequence) -> Dict[str, float]:
     """runs evaluation metrics returned in a dict
 
     Returns:
@@ -18,7 +22,9 @@ def evaluate(y_test, y_pred):
     return {"MAE": mae, "MAPE": mape, "RMSE": rmse}
 
 
-def backtest_model(model, X, y, n_splits, test_size):
+def backtest_model(
+    model: BaseEstimator, X: pd.DataFrame, y: pd.Series, n_splits: int, test_size: int
+) -> List[Dict[str, float]]:
     """
     Perform backtesting with a rolling window approach.
 
@@ -26,9 +32,8 @@ def backtest_model(model, X, y, n_splits, test_size):
         model: The trained forecasting model.
         X (pd.DataFrame): The input features.
         y (pd.Series): The target variable.
-        initial_train_size (int): Number of samples for the initial training set.
+        n_splits (int): Number training windows to backtest.
         test_size (int): Number of samples for each test window.
-        step_size (int): The step size for moving the window forward.
 
     Returns:
         list: A list of mean absolute errors for each backtesting window.

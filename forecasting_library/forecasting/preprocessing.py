@@ -1,3 +1,6 @@
+from typing import Any, List, Self
+
+import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
@@ -6,7 +9,7 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler
 
 
 class TimeFeaturesAdder(BaseEstimator, TransformerMixin):
-    def __init__(self, datetime_column="index"):
+    def __init__(self, datetime_column: str = "index"):
         """
         Custom transformer to add time-based features.
 
@@ -15,11 +18,11 @@ class TimeFeaturesAdder(BaseEstimator, TransformerMixin):
         """
         self.datetime_column = datetime_column
 
-    def fit(self, X, y=None):
+    def fit(self, X: Any, y: Any = None) -> Self:
         # No fitting required for adding time-based features
         return self
 
-    def transform(self, X):
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = X.copy()
         if self.datetime_column == "index":
             X[self.datetime_column] = X.index
@@ -29,7 +32,9 @@ class TimeFeaturesAdder(BaseEstimator, TransformerMixin):
         return X.drop(columns=[self.datetime_column])
 
 
-def create_preprocessing_pipeline(numeric_cols, categorical_cols, datetime_column="index"):
+def create_preprocessing_pipeline(
+    numeric_cols: List[str], categorical_cols: List[str], datetime_column: str = "index"
+) -> Pipeline:
     """
     Create a preprocessing pipeline that includes imputation, scaling,
     and feature engineering.
