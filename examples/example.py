@@ -37,22 +37,19 @@ X_train, X_test, y_train, y_test = forecasting_api.split_train_test(
 )
 
 # Step 4: Train the Model Using the Complete Training Pipeline (from pre jul 2023 data)
-mae = forecasting_api.train_pipeline(X_train, y_train, param_grid=param_grid, test_size=0.2)
+forecasting_api.train_pipeline(X_train, y_train, param_grid=param_grid, test_size=0.2)
 
 # Step 5: Make Predictions on New Data
 predictions = forecasting_api.forecast(X_test)
 
 # Step 6: Run Backtesting
 import numpy as np
-
 backtest_results = forecasting_api.backtest_model(X, y, n_splits=14, test_size=24)
 average_mape = np.mean([r["MAPE"] for r in backtest_results])
 print(f"Average Mean Absolute Percent Error (MAPE) during backtesting: {average_mape}")
 
 
 """
-
-
 # Step 2: Define the Model and Parameter Grid
 model_type = 'random_forest'
 param_grid = {
