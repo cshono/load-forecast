@@ -23,16 +23,23 @@ X_train_preprocessed = preprocessing_pipeline.fit_transform(X_train)
 X_test_preprocessed = preprocessing_pipeline.transform(X_test)
 
 # Initialize the forecasting API with a linear model
-forecasting_api = ForecastingAPI(model_type='linear')
+# forecasting_api = ForecastingAPI(model_type='linear')
+#forecasting_api = ForecastingAPI(model_type='random_forest')
+categorical_features = ["hour"]
+forecasting_api = ForecastingAPI(
+    model_type = 'grid_search',
+    categorical_features = categorical_features,
+    numeric_features = [c for c in X_train if c not in categorical_features]
+)
 
 # Train the model
-forecasting_api.train_model(X_train_preprocessed, y_train)
+forecasting_api.train_model(X_train, y_train)
 
 # Forecast on X_test
-predictions = forecasting_api.forecast(X_test_preprocessed)
+predictions = forecasting_api.forecast(X_test)
 
 # Evaluate the model on X_test, y_test
-evaluation_metrics = forecasting_api.evaluate_model(X_test_preprocessed, y_test)
+evaluation_metrics = forecasting_api.evaluate_model(X_test, y_test)
 print(evaluation_metrics)
 
 # Perform backtesting
