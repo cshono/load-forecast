@@ -1,5 +1,6 @@
 import pandas as pd 
 import xgboost as xgb
+from forecasting_library.forecasting.evaluation import backtest_model
 
 class ForecastingAPI:
     def __init__(self, model_type='linear', preprocessing_pipeline=None, **model_params):
@@ -100,6 +101,13 @@ class ForecastingAPI:
         if self.preprocessing_pipeline is not None:
             X = self.preprocessing_pipeline.transform(X)
         return self.model.predict(X)
+    
+    def backtest_model(self, X, y, n_splits, test_size):
+        return backtest_model(self.model, X, y, n_splits, test_size)
+    
+
+
+        
     
 
     

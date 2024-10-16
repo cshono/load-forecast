@@ -38,7 +38,7 @@ predictions = forecasting_api.forecast(X_test)
 
 # Step 6: Run Backtesting
 import numpy as np  
-backtest_results = backtest_model(forecasting_api.model, X, y, n_splits=14, test_size=24)
+backtest_results = forecasting_api.backtest_model(X, y, n_splits=14, test_size=24)
 average_mape = np.mean([r['MAPE'] for r in backtest_results])
 print(f'Average Mean Absolute Percent Error (MAPE) during backtesting: {average_mape}')
 
