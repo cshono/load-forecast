@@ -1,8 +1,33 @@
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline 
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
+from sklearn.base import BaseEstimator, TransformerMixin
 
-def create_preprocessing_pipeline():
+class TimeFeaturesAdder(BaseEstimator, TransformerMixin):
+    def __init__(self, datetime_column='index'):
+        """
+        Custom transformer to add time-based features.
+        
+        Args:
+            datetime_column (str): The name of the datetime column.
+        """
+        self.datetime_column = datetime_column
+        
+    def fit(self, X, y=None):
+        # No fitting required for adding time-based features
+        return self
+
+    def transform(self, X):
+        X = X.copy()
+        if self.datetime_column == 'index': 
+            X[self.datetime_column] = X.index
+        X['hour'] = X[self.datetime_column].dt.hour
+        X['day_of_week'] = X[self.datetime_column].dt.dayofweek
+        X['month'] = X[self.datetime_column].dt.month
+        return X.drop(columns=[self.datetime_column])
+
+def create_preprocessing_pipeline(numeric_cols, categorical_cols, datetime_column='index'):
     """
     Create a preprocessing pipeline that includes imputation, scaling,
     and feature engineering.
@@ -10,37 +35,29 @@ def create_preprocessing_pipeline():
     Returns:
         Pipeline: A scikit-learn Pipeline object for preprocessing.
     """
-    pipeline = Pipeline(steps=[
-        ('imputer', SimpleImputer(strategy='mean')),   # Impute missing values
-        ('scaler', StandardScaler())                   # Scale features
-    ])
-    return pipeline
-
-def add_time_features(df):
-    """Add time-based features to the dataframe."""
-    df['hour'] = df.index.hour
-    df['day_of_week'] = df.index.dayofweek
-    df['month'] = df.index.month
-    return df
-
-def preprocess_data(data, target_column):
-    """
-    Preprocess the data by adding time features, imputing missing values,
-    and separating features from the target.
+    categorical_transformer = Pipeline(
+        steps=[
+            ("encoder", OneHotEncoder(handle_unknown="ignore"))
+            #, ("selector", SelectPercentile(chi2, percentile=50))
+        ]
+    )
+    numeric_transformer = Pipeline(
+        steps=[
+            ("imputer", SimpleImputer(strategy="median")),
+            ("std_scaler", StandardScaler()),
+            ("minmax_scaler", MinMaxScaler())
+        ]
+    )
+    column_transformer = ColumnTransformer(
+        transformers=[
+            ("num", numeric_transformer, numeric_cols),
+            ("cat", categorical_transformer, categorical_cols),
+        ]
+    )
     
-    Args:
-        data (pd.DataFrame): The input data including features and target.
-        target_column (str): The name of the target column in the data.
-        imputation_strategy (str): The strategy for imputing missing values.
-    
-    Returns:
-        pd.DataFrame, pd.Series: The preprocessed features and target.
-    """
-    # Add time-based features
-    data = add_time_features(data)
-
-    # Separate features and target
-    X = data.drop(columns=[target_column])
-    y = data[target_column]
-
-    return X, y
+    return Pipeline(
+        steps=[
+            ('add_time_features', TimeFeaturesAdder(datetime_column=datetime_column)),
+            ('column_transformer', column_transformer),
+        ]
+    )
