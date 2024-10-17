@@ -18,6 +18,7 @@ Module for evaluating forecast predictions.
 - univariate target
 - assumes Regression-based (non-classifier models) BaseEstimator for the numeric target.
 - assumes feature values are numeric (non-categorical). This holds true for the provided weather and derived time features. Future additions to the preprocessing module could include onehot-encoding for categorical features 
+- assumes sufficient data quality of feature coverage to dropna samples. Would need to implement an imputer class if training data coverage becomes too sparse. 
 - target lags are not allowed to be less than 38 in the training features because the day-ahead forecast must predict a predictions for all 24 hours of D+1 at 10 AM of day D. There is 38 hour difference between 10 AM on day D and midnight on day D+1. 
 - the ForecastingTask wrapper class does not prohibit an input of target_lag < 38 because the library could potentially be extended to shorter horizon use cases such as a real-time electricity market forecasts. 
 
