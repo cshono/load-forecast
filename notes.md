@@ -30,3 +30,19 @@ Examples:
 - Develop 2 models that achieve the forecast task above and compare their performance to each other 
 - How do you expect your model to perform, in general? 
     - Include metrics and/or visualizations to support your answer 
+
+
+columns: 
+feature1
+feature2
+feature1_lag_1
+feature1_lag_2
+feature2_lag_1
+feature2_lag_2
+hour_1
+hour_2
+hour_3
+hour_4 
+target
+target_lag_1
+target_lag_2

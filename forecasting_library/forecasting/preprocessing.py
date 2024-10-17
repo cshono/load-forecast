@@ -1,11 +1,7 @@
-from typing import Any, List, Self
+from typing import Any, List, Self, Tuple
 
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler
 
 
 class TimeFeaturesAdder(BaseEstimator, TransformerMixin):
@@ -32,39 +28,47 @@ class TimeFeaturesAdder(BaseEstimator, TransformerMixin):
         return X.drop(columns=[self.datetime_column])
 
 
-def create_preprocessing_pipeline(
-    numeric_cols: List[str], categorical_cols: List[str], datetime_column: str = "index"
-) -> Pipeline:
-    """
-    Create a preprocessing pipeline that includes imputation, scaling,
-    and feature engineering.
+class LagFeatureAdder(BaseEstimator, TransformerMixin):
+    def __init__(self, lagged_features: List[str], lags: List[int]):
+        self.lagged_features = lagged_features
+        self.lags = lags
 
-    Returns:
-        Pipeline: A scikit-learn Pipeline object for preprocessing.
-    """
-    categorical_transformer = Pipeline(
-        steps=[
-            ("encoder", OneHotEncoder(handle_unknown="ignore"))
-            # , ("selector", SelectPercentile(chi2, percentile=50))
-        ]
-    )
-    numeric_transformer = Pipeline(
-        steps=[
-            ("imputer", SimpleImputer(strategy="median")),
-            ("std_scaler", StandardScaler()),
-            ("minmax_scaler", MinMaxScaler()),
-        ]
-    )
-    column_transformer = ColumnTransformer(
-        transformers=[
-            ("num", numeric_transformer, numeric_cols),
-            ("cat", categorical_transformer, categorical_cols),
-        ]
-    )
+    def fit(self, X: Any, y: Any = None) -> Self:
+        # No fitting is necessary for lagging
+        return self
 
-    return Pipeline(
-        steps=[
-            ("add_time_features", TimeFeaturesAdder(datetime_column=datetime_column)),
-            ("column_transformer", column_transformer),
-        ]
-    )
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        # Ensure input is a DataFrame
+        X_lagged = X.copy()
+        for feature in self.lagged_features:
+            if feature not in X:
+                continue
+            for lag in self.lags:
+                X_lagged[f"{feature}_lag_{lag}"] = X[feature].shift(lag)
+        # Drop rows with NaN values introduced by lagging
+        X_lagged = X_lagged.dropna()
+        return X_lagged
+
+
+def preprocess_data(
+    data: pd.DataFrame,
+    datetime_column: str,
+    lagged_features: list,
+    feature_lags: list,
+    target_col: str,
+    target_lags: list,
+) -> pd.DataFrame:
+    """Preprocess the data by adding time features and lag features."""
+    # Add time-based features
+    time_feature_adder = TimeFeaturesAdder(datetime_column=datetime_column)
+    data_with_time_features = time_feature_adder.transform(data)
+
+    # Add lag features
+    lag_feature_adder = LagFeatureAdder(lagged_features=lagged_features, lags=feature_lags)
+    data_with_lags = lag_feature_adder.transform(data_with_time_features)
+
+    # Add lag target
+    lag_target_adder = LagFeatureAdder(lagged_features=[target_col], lags=target_lags)
+    data_preprocessed = lag_target_adder.transform(data_with_lags)
+
+    return data_preprocessed

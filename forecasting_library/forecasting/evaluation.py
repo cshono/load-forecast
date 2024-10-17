@@ -1,5 +1,6 @@
-from typing import Dict, List, Sequence
+from typing import Any, Dict, List, Sequence, Tuple
 
+import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.metrics import (
@@ -24,7 +25,7 @@ def evaluate(y_test: Sequence, y_pred: Sequence) -> Dict[str, float]:
 
 def backtest_model(
     model: BaseEstimator, X: pd.DataFrame, y: pd.Series, n_splits: int, test_size: int
-) -> List[Dict[str, float]]:
+) -> Tuple[List[Dict[str, float]], np.ndarray[Any, Any]]:
     """
     Perform backtesting with a rolling window approach.
 
@@ -39,6 +40,7 @@ def backtest_model(
         list: A list of mean absolute errors for each backtesting window.
     """
     results = []
+    preds = np.array([])
     tscv = TimeSeriesSplit(n_splits=n_splits, test_size=test_size)
 
     for train_index, test_index in tscv.split(X):
@@ -50,9 +52,10 @@ def backtest_model(
 
         # Generate predictions
         y_pred = model.predict(X_test)
+        preds = np.append(preds, y_pred)
 
         # Evaluate the performance
         result = evaluate(y_test, y_pred)
         results.append(result)
 
-    return results
+    return results, preds

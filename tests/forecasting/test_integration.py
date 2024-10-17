@@ -3,30 +3,32 @@ import pandas as pd
 from sklearn.model_selection import GridSearchCV
 
 from forecasting_library.forecasting.forecasting_api import ForecastingAPI
-from forecasting_library.forecasting.preprocessing import create_preprocessing_pipeline
+from forecasting_library.forecasting.preprocessing import preprocess_data
 
 
 def test_full_pipeline_workflow_w_grid_search():
-    X = pd.DataFrame(
+    data = pd.DataFrame(
         {
+            "target": np.arange(100),
             "datetime": pd.date_range("2024-01-01", periods=100, freq="h"),
             "feature1": np.arange(100),
             "feature2": np.arange(100, 200),
         }
     )
-    y = pd.Series(np.arange(100))
 
     # Create a preprocessing pipeline
-    preprocessing_pipeline = create_preprocessing_pipeline(
-        numeric_cols=["feature1", "feature2"],
-        categorical_cols=["month", "hour", "day_of_week"],
+    lagged_features = [c for c in data if c != "CAISO_system_load"]
+    data_preprocessed = preprocess_data(
+        data,
         datetime_column="datetime",
+        lagged_features=lagged_features,
+        feature_lags=[1, 2],
+        target_col="target",
+        target_lags=[2, 3],
     )
 
     # Initialize the ForecastingAPI
-    forecasting_api = ForecastingAPI(
-        model_type="xgboost", preprocessing_pipeline=preprocessing_pipeline
-    )
+    forecasting_api = ForecastingAPI(model_type="xgboost")
 
     # Train the pipeline and perform backtesting
     param_grid = {
@@ -36,8 +38,14 @@ def test_full_pipeline_workflow_w_grid_search():
         "subsample": [0.2, 0.3],
     }
 
-    forecasting_api.train_pipeline(X, y, param_grid=param_grid, test_size=0.2)
-    predictions = forecasting_api.forecast(X.iloc[-10:])
+    X = data_preprocessed.drop(columns=["target"])
+    y = data_preprocessed["target"]
+
+    X_train, X_test = X.iloc[:-12], X.iloc[-12:]
+    y_train, y_test = y.iloc[:-12], y.iloc[-12:]
+
+    forecasting_api.train_pipeline(X_train, y_train, param_grid=param_grid, n_splits=3)
+    predictions = forecasting_api.forecast(X_test)[-10:]
 
     assert (
         forecasting_api.grid_search_result.best_estimator_ is not None
