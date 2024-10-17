@@ -4,12 +4,11 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 from sklearn.base import BaseEstimator
-from sklearn.pipeline import Pipeline
 
-from forecasting_library.forecasting.evaluation import backtest_model
+from forecasting_library.forecasting.evaluation import backtest_model, evaluate
 
 
-class ForecastingAPI:
+class ForecastModel:
     def __init__(
         self,
         model_type: str = "linear",
@@ -47,7 +46,7 @@ class ForecastingAPI:
             return xgb.XGBRegressor(**model_params)
         raise ValueError(f"Unsupported model type: {model_type}")
 
-    def train_pipeline(
+    def train(
         self,
         X_train: pd.DataFrame,
         y_train: pd.Series,
@@ -101,6 +100,10 @@ class ForecastingAPI:
         Generate forecasts for the given data.
         """
         return self.model.predict(X)
+
+    def evaluate(self, y_test: Sequence, y_pred: Sequence) -> Dict[str, float]:
+        """Runs evaluate of y_pred"""
+        return evaluate(y_test, y_pred)
 
     def backtest_model(
         self, X: pd.DataFrame, y: pd.Series, n_splits: int, test_size: int

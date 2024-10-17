@@ -1,6 +1,6 @@
 import pandas as pd
 
-from forecasting_library.forecasting.forecasting_api import ForecastingAPI
+from forecasting_library.forecasting.forecast_model import ForecastModel
 
 
 def generate_train_data():
@@ -16,25 +16,23 @@ def generate_train_data():
 
 def test_model_initialization():
     for model_type in ["linear", "random_forest", "gradient_boosting", "xgboost"]:
-        forecasting_api = ForecastingAPI(model_type=model_type)
-        assert (
-            forecasting_api.model is not None
-        ), f"{model_type} model did not initialize correctly."
+        forecast_run = ForecastModel(model_type=model_type)
+        assert forecast_run.model is not None, f"{model_type} model did not initialize correctly."
 
 
 def test_model_training():
     X, y = generate_train_data()
-    forecasting_api = ForecastingAPI(model_type="random_forest")
-    forecasting_api.train_pipeline(X, y)
-    assert forecasting_api.model is not None, "Model did not train correctly."
+    forecast_run = ForecastModel(model_type="random_forest")
+    forecast_run.train(X, y)
+    assert forecast_run.model is not None, "Model did not train correctly."
 
 
 def test_forecast_output_shape():
     X, y = generate_train_data()
     X_test = pd.DataFrame({"feature1": [7, 8], "feature2": [9, 10]})
 
-    forecasting_api = ForecastingAPI(model_type="random_forest")
-    forecasting_api.train_pipeline(X, y)
-    predictions = forecasting_api.forecast(X_test)
+    forecast_run = ForecastModel(model_type="random_forest")
+    forecast_run.train(X, y)
+    predictions = forecast_run.forecast(X_test)
 
     assert len(predictions) == len(X_test), "Forecast output length does not match input length."

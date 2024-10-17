@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import GridSearchCV
 
-from forecasting_library.forecasting.forecasting_api import ForecastingAPI
+from forecasting_library.forecasting.forecast_model import ForecastModel
 from forecasting_library.forecasting.preprocessing import preprocess_data
 
 
@@ -27,8 +27,8 @@ def test_full_pipeline_workflow_w_grid_search():
         target_lags=[2, 3],
     )
 
-    # Initialize the ForecastingAPI
-    forecasting_api = ForecastingAPI(model_type="xgboost")
+    # Initialize the ForecastModel
+    forecast_run = ForecastModel(model_type="xgboost")
 
     # Train the pipeline and perform backtesting
     param_grid = {
@@ -42,15 +42,17 @@ def test_full_pipeline_workflow_w_grid_search():
     y = data_preprocessed["target"]
 
     X_train, X_test = X.iloc[:-12], X.iloc[-12:]
-    y_train, y_test = y.iloc[:-12], y.iloc[-12:]
+    y_train = y.iloc[:-12]
 
-    forecasting_api.train_pipeline(X_train, y_train, param_grid=param_grid, n_splits=3)
-    predictions = forecasting_api.forecast(X_test)[-10:]
+    forecast_run.train(X_train, y_train, param_grid=param_grid, n_splits=3)
+    predictions = forecast_run.forecast(X_test)
 
     assert (
-        forecasting_api.grid_search_result.best_estimator_ is not None
+        forecast_run.grid_search_result.best_estimator_ is not None
     ), "model best_estimator has been set"
     assert isinstance(
-        forecasting_api.grid_search_result, GridSearchCV
+        forecast_run.grid_search_result, GridSearchCV
     ), "forecast api returns grid_search_result"
-    assert len(predictions) == 10, "The forecasted output does not match the expected length."
+    assert len(predictions) == len(
+        X_test
+    ), "The forecasted output does not match the expected length."

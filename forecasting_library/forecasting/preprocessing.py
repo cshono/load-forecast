@@ -1,4 +1,4 @@
-from typing import Any, List, Self, Tuple
+from typing import Any, List, Self
 
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -29,6 +29,14 @@ class TimeFeaturesAdder(BaseEstimator, TransformerMixin):
 
 
 class LagFeatureAdder(BaseEstimator, TransformerMixin):
+    """
+    Custom transformer to add lagged features.
+
+    Args:
+        lagged_features (List[str]): A list of column names to apply lags on.
+        lags (List[int]): A list of lag shifts to apply to each lag feature.
+    """
+
     def __init__(self, lagged_features: List[str], lags: List[int]):
         self.lagged_features = lagged_features
         self.lags = lags
@@ -59,6 +67,9 @@ def preprocess_data(
     target_lags: list,
 ) -> pd.DataFrame:
     """Preprocess the data by adding time features and lag features."""
+    # Interpolate any missing data up to 4 hours
+    data = data.interpolate(limit=4)
+
     # Add time-based features
     time_feature_adder = TimeFeaturesAdder(datetime_column=datetime_column)
     data_with_time_features = time_feature_adder.transform(data)
